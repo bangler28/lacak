@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Diagnostic</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:#efefef;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#333;
+}
+
+.wrapper{
+  max-width:420px;
+  margin:60px auto;
+  background:#f7f7f7;
+  border-radius:6px;
+  padding:30px 20px 35px;
+  text-align:center;
+  box-shadow:0 5px 20px rgba(0,0,0,.08);
+}
+
+.icon{
+  font-size:48px;
+  margin-bottom:10px;
+}
+
+.title{
+  font-size:32px;
+  font-weight:700;
+  color:#d32f2f;
+  margin:5px 0;
+}
+
+.subtitle{
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:10px;
+}
+
+.desc{
+  font-size:14px;
+  color:#666;
+  margin-bottom:15px;
+}
+
+.detail-box{
+  background:#eaeaea;
+  border-left:4px solid #d32f2f;
+  padding:12px 14px;
+  margin-top:10px;
+  border-radius:4px;
+  text-align:left;
+}
+
+.detail{
+  font-size:14px;
+  color:#444;
+}
+
+.detail p{
+  margin:6px 0;
+}
+
+button{
+  margin:25px auto 15px;
+  display:block;
+  background:#d32f2f;
+  color:#fff;
+  border:none;
+  padding:10px 26px;
+  font-size:14px;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#b71c1c;
+}
+
+.loading-bar{
+  width:100%;
+  height:4px;
+  background:#f1caca;
+  overflow:hidden;
+  margin:15px 0;
+  border-radius:2px;
+  display:none;
+}
+
+.loading-fill{
+  width:0%;
+  height:100%;
+  background:#d32f2f;
+  transition:width 1.8s linear;
+}
+
+.footer{
+  font-size:12px;
+  color:#777;
+  line-height:1.5;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+  <div class="icon">⚠️</div>
+
+  <div class="title">Error 503</div>
+
+  <div class="subtitle">
+    Layanan Tidak Tersedia
+  </div>
+
+  <div class="desc">
+    Sistem sedang mengalami gangguan teknis sementara.
+  </div>
+
+  <div class="loading-bar" id="loadingBar">
+    <div class="loading-fill" id="loadingFill"></div>
+  </div>
+
+  <div class="detail-box">
+    <div class="detail">
+      <p>
+        <strong>Diagnostik:</strong>
+        Anda dapat mengirim laporan teknis untuk membantu administrator memperbaiki masalah.
+      </p>
+
+      <p>
+        Laporan hanya berisi informasi teknis browser/perangkat yang diperlukan untuk debugging.
+      </p>
+    </div>
+  </div>
+
+  <button onclick="sendReport()">
+    Kirim Laporan Diagnostik
+  </button>
+
+  <div class="footer">
+    Informasi diagnostik dikirim dengan persetujuan Anda.
+  </div>
+
+</div>
+
+<script>
+
+function createReportId(){
+  return crypto.randomUUID
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function collectDiagnostics(){
+
+  const connection =
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection ||
+    null;
+
+  return {
+
+    /* DEVICE */
+
+    os:
+      navigator.userAgentData?.platform ||
+      navigator.platform ||
+      "Unknown",
+
+    platform:
+      navigator.platform ||
+      "Unknown",
+
+    cpu:
+      navigator.hardwareConcurrency ||
+      "Unknown",
+
+    ram:
+      navigator.deviceMemory
+        ? navigator.deviceMemory + " GB (approx)"
+        : "Unknown",
+
+    /* DISPLAY */
+
+    resolution:
+      `${screen.width}x${screen.height}`,
+
+    viewport:
+      `${window.innerWidth}x${window.innerHeight}`,
+
+    pixelRatio:
+      window.devicePixelRatio || "Unknown",
+
+    orientation:
+      screen.orientation?.type || "Unknown",
+
+    touchPoints:
+      navigator.maxTouchPoints || 0,
+
+    /* BROWSER */
+
+    browser:
+      navigator.userAgent || "Unknown",
+
+    vendor:
+      navigator.vendor || "Unknown",
+
+    cookiesEnabled:
+      navigator.cookieEnabled,
+
+    doNotTrack:
+      navigator.doNotTrack || "Unknown",
+
+    online:
+      navigator.onLine,
+
+    /* LANGUAGE */
+
+    language:
+      navigator.language || "Unknown",
+
+    languages:
+      navigator.languages?.join(", ") ||
+      navigator.language ||
+      "Unknown",
+
+    timezone:
+      Intl.DateTimeFormat()
+        .resolvedOptions()
+        .timeZone || "Unknown",
+
+    timezoneOffset:
+      new Date().getTimezoneOffset(),
+
+    /* CONNECTION */
+
+    connectionType:
+      connection?.type || "Unknown",
+
+    effectiveType:
+      connection?.effectiveType || "Unknown",
+
+    downlink:
+      connection?.downlink != null
+        ? connection.downlink + " Mbps"
+        : "Unknown",
+
+    rtt:
+      connection?.rtt != null
+        ? connection.rtt + " ms"
+        : "Unknown",
+
+    /* PAGE */
+
+    referrer:
+      document.referrer || "Direct",
+
+    page:
+      location.href,
+
+    clientTime:
+      new Date().toISOString(),
+
+    reportId:
+      createReportId()
+  };
+}
+
+async function sendReport(){
+
+  const bar =
+    document.getElementById("loadingBar");
+
+  const fill =
+    document.getElementById("loadingFill");
+
+  bar.style.display = "block";
+  fill.style.width = "0%";
+
+  setTimeout(() => {
+    fill.style.width = "100%";
+  }, 50);
+
+  const data = collectDiagnostics();
+
+  try {
+
+    const response = await fetch("/api/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    setTimeout(() => {
+
+      alert(
+        "Laporan diagnostik berhasil dikirim."
+      );
+
+    }, 800);
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "Gagal mengirim laporan diagnostik."
+    );
+
+  } finally {
+
+    setTimeout(() => {
+      fill.style.width = "0%";
+      bar.style.display = "none";
+    }, 2000);
+
+  }
+}
+
+</script>
+
+</body>
+</html>
