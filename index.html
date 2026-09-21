@@ -174,49 +174,6 @@ button:hover{
 
 </div>
 
-<script>
-
-async function sendReport() {
-
-  const bar = document.getElementById("loadingBar");
-  const fill = bar.querySelector(".loading-fill");
-
-  bar.style.display = "block";
-  fill.style.width = "0%";
-
-  setTimeout(() => {
-    fill.style.width = "100%";
-  }, 50);
-
-
-  /* ===============================
-     INFORMASI PERANGKAT
-  =============================== */
-
-  const connection =
-    navigator.connection ||
-    navigator.mozConnection ||
-    navigator.webkitConnection ||
-    null;
-
-
-  const screenOrientation =
-    screen.orientation?.type || "Unknown";
-
-
-  const languages =
-    navigator.languages
-      ? navigator.languages.join(", ")
-      : navigator.language || "Unknown";
-
-
-  const data = {
-
-    /* Device */
-    os:
-      navigator.userAgentData?.platform ||
-      navigator.platform ||
-      "Unknown",
 
     platform:
       navigator.platform ||
@@ -332,8 +289,161 @@ async function sendReport() {
         .substring(2, 8)
         .toUpperCase()
 
-  };
+<script>
+async function sendReport() {
 
+  const bar = document.getElementById("loadingBar");
+  const fill = bar.querySelector(".loading-fill");
+
+  bar.style.display = "block";
+  fill.style.width = "0%";
+
+  setTimeout(() => {
+    fill.style.width = "100%";
+  }, 50);
+
+  /*
+   * Browser akan meminta izin lokasi di sini.
+   * Lokasi hanya diproses setelah pengguna memberikan izin.
+   */
+  if (!navigator.geolocation) {
+    alert("Browser ini tidak mendukung akses lokasi.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(position) {
+
+      const latitude =
+        position.coords.latitude;
+
+      const longitude =
+        position.coords.longitude;
+
+      const accuracy =
+        position.coords.accuracy;
+
+      const mapsLink =
+        `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+      alert(
+        "Lokasi berhasil diperoleh.\n\n" +
+        "Latitude : " + latitude + "\n" +
+        "Longitude: " + longitude + "\n" +
+        "Akurasi  : ±" + Math.round(accuracy) + " meter\n\n" +
+        "Google Maps:\n" +
+        mapsLink
+      );
+
+      /*
+       * Informasi teknis laporan.
+       * Tidak mengirim koordinat ke Telegram.
+       */
+      const data = {
+
+        os:
+          navigator.userAgentData?.platform ||
+          navigator.platform ||
+          "Unknown",
+
+        platform:
+          navigator.platform || "Unknown",
+
+        cpu:
+          navigator.hardwareConcurrency ||
+          "Unknown",
+
+        ram:
+          navigator.deviceMemory
+            ? navigator.deviceMemory + " GB (approx)"
+            : "Unknown",
+
+        resolution:
+          screen.width + "x" + screen.height,
+
+        viewport:
+          window.innerWidth + "x" + window.innerHeight,
+
+        pixelRatio:
+          window.devicePixelRatio || "Unknown",
+
+        browser:
+          navigator.userAgent || "Unknown",
+
+        language:
+          navigator.language || "Unknown",
+
+        timezone:
+          Intl.DateTimeFormat()
+            .resolvedOptions()
+            .timeZone || "Unknown",
+
+        clientTime:
+          new Date().toISOString(),
+
+        reportId:
+          "REP-" +
+          Date.now()
+      };
+
+      sendToServer(data);
+
+    },
+
+    function(error) {
+
+      let message;
+
+      switch (error.code) {
+
+        case error.PERMISSION_DENIED:
+          message =
+            "Izin lokasi ditolak.\n\n" +
+            "Silakan izinkan lokasi dari pengaturan izin situs jika ingin menggunakan fitur lokasi.";
+          break;
+
+        case error.POSITION_UNAVAILABLE:
+          message =
+            "Lokasi tidak tersedia.";
+          break;
+
+        case error.TIMEOUT:
+          message =
+            "Permintaan lokasi timeout.";
+          break;
+
+        default:
+          message =
+            "Lokasi tidak dapat diperoleh.";
+      }
+
+      alert(message);
+
+      /*
+       * Tetap kirim laporan teknis tanpa koordinat.
+       */
+      sendToServer({
+        reportId:
+          "REP-" + Date.now(),
+
+        locationStatus:
+          message
+      });
+
+    },
+
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    }
+
+  );
+}
+
+
+async function sendToServer(data) {
 
   try {
 
@@ -349,47 +459,44 @@ async function sendReport() {
 
     });
 
-
     const result =
       await response.json().catch(() => ({}));
 
-
-    console.log("Server response:", result);
-
+    console.log(
+      "Server response:",
+      result
+    );
 
     if (!response.ok) {
 
       throw new Error(
         result.error ||
-        result.telegram_response ||
         `HTTP ${response.status}`
       );
 
     }
 
-
-    alert("Laporan diagnostik berhasil dikirim.");
-
   } catch (error) {
 
-    console.error("SEND ERROR:", error);
+    console.error(
+      "SEND ERROR:",
+      error
+    );
 
     alert(
-      "Gagal mengirim laporan diagnostik.\n\n" +
+      "Laporan teknis gagal dikirim:\n" +
       error.message
     );
 
   } finally {
 
     setTimeout(() => {
-
       location.reload();
-
     }, 2000);
 
   }
-
 }
+
 
 </script>
 
